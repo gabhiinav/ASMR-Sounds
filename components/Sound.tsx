@@ -14,43 +14,40 @@ const Sound = ({
   onPlay,
   onPause,
 }: SoundType) => {
-  const [volume, setVolume] = useState(0.5);
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const [volume, setVolume] = useState(0.3);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    const audio = audioRef.current;
-
-    if (audio) {
-      audio.volume = isMuted ? 0 : volume;
+    if (audioRef.current) {
+      audioRef.current.volume = isMuted ? 0 : 1;
     }
-  }, [isMuted, volume]);
-
-  useEffect(() => {
-    const audio = audioRef.current;
-
-    if (audio) {
-      if (isActive && isPlaying) {
-        audio.play();
-        onPlay && onPlay();
-      } else {
-        audio.pause();
-        onPause && onPause();
-      }
-    }
-  }, [isActive, isPlaying]);
+  }, [isMuted]);
 
   useEffect(() => {
     if (!audioRef.current) {
-      audioRef.current = new Audio(src);
-      audioRef.current.loop = true;
+      const audio = new Audio(src);
+      audioRef.current = audio;
+      audio.loop = true;
     }
-
-    const audio = audioRef.current;
-
-    if (isPlaying) {
-      audio.play();
+    if (isActive) {
+      audioRef.current.play();
+      onPlay && onPlay();
     } else {
-      audio.pause();
+      audioRef.current.pause();
+      onPause && onPause();
+    }
+  }, [isActive, src]);
+
+  useEffect(() => {
+    if (!audioRef.current) {
+      const audio = new Audio(src);
+      audioRef.current = audio;
+      audio.loop = true;
+    }
+    if (isPlaying) {
+      audioRef.current.play();
+    } else {
+      audioRef.current.pause();
     }
   }, [isPlaying, src]);
 
@@ -67,26 +64,21 @@ const Sound = ({
     value: number | number[],
     activeThumb: number
   ) => {
-    const newVolume = value as number;
-    setVolume(newVolume);
-
-    if (audioRef.current) {
-      audioRef.current.volume = newVolume;
-    }
+    setVolume(value as number);
+    audioRef.current && (audioRef.current.volume = value as number);
   };
-
   return (
     <div className="relative">
       <div
         onClick={handleSoundPlay}
         className={`p-[3rem_5rem] border-[2px] cursor-pointer border-white rounded-lg flex flex-col gap-[.5rem] justify-center items-center hover:bg-[rgba(255,255,255,.05)] ${
-          isPlaying ? "stop-sound" : "play-sound"
+          isPlaying ? "opacity-[1] bg-[rgba(255,255,255,.05)]" : "opacity-[.8]"
         }`}
       >
         <div className="text-white font-bold">{title}</div>
         <img src={icon} alt="" className="w-[75px] h-[75px]" />
       </div>
-      {isPlaying && (
+      {isPlaying ? (
         <Slider
           min={0}
           step={0.01}
@@ -96,6 +88,8 @@ const Sound = ({
           aria-label="Volume"
           className="!absolute !left-1/2 !transform !-translate-x-1/2  !bottom-[20px] !w-[170px] !text-white"
         />
+      ) : (
+        ""
       )}
     </div>
   );
